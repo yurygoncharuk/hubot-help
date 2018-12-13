@@ -58,6 +58,8 @@ const helpContents = (name, commands) => `\
 `
 
 module.exports = (robot) => {
+  const replyInPrivate = process.env.HUBOT_HELP_REPLY_IN_PRIVATE
+
   robot.respond(/help(?:\s+(.*))?$/i, (msg) => {
     let cmds = getHelpCommands(robot)
     const filter = msg.match[1]
@@ -72,9 +74,12 @@ module.exports = (robot) => {
 
     const emit = cmds.join('\n')
 
-    if (process.env.HUBOT_HELP_REPLY_IN_PRIVATE && msg.message && msg.message.user && msg.message.user.name && msg.message.user.name !== msg.message.room) {
-      msg.reply('I just replied to you in private.')
-      return msg.sendPrivate(emit)
+    if (replyInPrivate && robot.adapterName === 'slack' && msg.message && msg.message.user && msg.message.user.id) {
+      msg.reply('replied to you in private!')
+      return robot.send({ room: msg.message.user.id }, emit)
+    } else if (replyInPrivate && msg.message && msg.message.user && msg.message.user.name) {
+      msg.reply('replied to you in private!')
+      return robot.send({ room: msg.message.user.name }, emit)
     } else {
       return msg.send(emit)
     }
